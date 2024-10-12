@@ -5,12 +5,15 @@ from flask import request, jsonify, abort
 from langchain import LLMChain, PromptTemplate
 from langchain.llms import Cohere
 from langchain.memory import ConversationBufferMemory
+from langchain.chains import RetrievalQA
+from langchain.embeddings import CohereEmbeddings
+from langchain.vectorstores import Chroma
 
 app = Flask(__name__)
 
 def answer_from_knowledgebase(message):
-    # TODO: Write your code here
-    return ""
+    res = qa({"query": message})
+    return res['result']
 
 def search_knowledgebase(message):
     # TODO: Write your code here
@@ -29,16 +32,31 @@ def answer_as_chatbot(message):
     llm_chain = LLMChain(prompt=prompt, llm=llm)
     res = llm_chain.run(message)
     memory.add_ai_message(res)
-    return res 
+    return res
+
+def load_db():
+    try:
+        embeddings = CohereEmbeddings(cohere_api_key=os.environ["COHERE_API_KEY"])
+        vectordb = Chroma(persist_directory='db', embedding_function=embeddings)
+        qa = RetrievalQA.from_chain_type(
+            llm=Cohere(),
+            chain_type="refine",
+            retriever=vectordb.as_retriever(),
+            return_source_documents=True
+        )
+        return qa
+    except Exception as e:
+        print("Error:", e)
+
+qa = load_db() 
 
 @app.route('/kbanswer', methods=['POST'])
 def kbanswer():
-    # TODO: Write your code here
+    message = request.json['message']
     
-    # call answer_from_knowledebase(message)
-        
-    # Return the response as JSON
-    return 
+    response_message = answer_from_knowledgebase(message)
+    
+    return jsonify({'message': response_message}), 200
 
 @app.route('/search', methods=['POST'])
 def search():    
