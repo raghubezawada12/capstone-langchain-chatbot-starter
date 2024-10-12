@@ -1,7 +1,10 @@
+import os
 from flask import Flask, render_template
 from flask import request, jsonify, abort
 
+from langchain import LLMChain, PromptTemplate
 from langchain.llms import Cohere
+from langchain.memory import ConversationBufferMemory
 
 app = Flask(__name__)
 
@@ -15,8 +18,18 @@ def search_knowledgebase(message):
     return sources
 
 def answer_as_chatbot(message):
-    # TODO: Write your code here
-    return ""
+    memory = ConversationBufferMemory()
+    template = """You are an expert Python developer. 
+    Answer the following question in a clear and informative manner:
+    Question: {question}
+    Answer:"""
+    prompt = PromptTemplate(template=template, input_variables=["question"])
+    memory.add_user_message(message)
+    llm = Cohere(cohere_api_key=os.environ["COHERE_API_KEY"])
+    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    res = llm_chain.run(message)
+    memory.add_ai_message(res)
+    return res 
 
 @app.route('/kbanswer', methods=['POST'])
 def kbanswer():
