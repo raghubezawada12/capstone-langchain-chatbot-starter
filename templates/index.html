@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thinkbot</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="static/style.css">
@@ -13,12 +15,13 @@
                 <div>
                     <select class="form-control" id="function-select">
                         <option value="answer">Answer as Chatbot</option>
+                        <option value="kb">Answer from Knowledgebase</option>
                     </select>
                 </div>
             </div>
             <div class="col">
                 <div class="input-group-append">
-                    <input type="text" id="message-input" placeholder="Type your message here...">
+                    <input type="text" id="message-input" placeholder="Type your message here..." class="form-control">
                     <button id="send-btn" class="btn btn-primary">Send</button>
                 </div>
             </div>
@@ -26,6 +29,31 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#send-btn').click(function() {
+                const message = $('#message-input').val();
+                const selectedFunction = $('#function-select').val();
+                const endpoint = selectedFunction === 'kb' ? '/kbanswer' : '/answer';
+
+                if (message.trim() !== "") {
+                    fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: message })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        $('#chat-container').append(`<div>${data.message}</div>`);
+                        $('#message-input').val(''); 
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    </script>
     <script src="static/main.js"></script>
 </body>
 </html>
