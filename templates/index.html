@@ -1,59 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thinkbot</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="static/style.css">
-</head>
-<body>
-    <div class="container mt-5">
-        <div id="chat-container" class="chat-container"></div>
-        <div class="row">
-            <div class="col">
-                <div>
-                    <select class="form-control" id="function-select">
-                        <option value="answer">Answer as Chatbot</option>
-                        <option value="kb">Answer from Knowledgebase</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col">
-                <div class="input-group-append">
-                    <input type="text" id="message-input" placeholder="Type your message here..." class="form-control">
-                    <button id="send-btn" class="btn btn-primary">Send</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#send-btn').click(function() {
-                const message = $('#message-input').val();
-                const selectedFunction = $('#function-select').val();
-                const endpoint = selectedFunction === 'kb' ? '/kbanswer' : '/answer';
+function sendMessage() {
+    let messageInput = document.getElementById('message-input');
+    let message = messageInput.value;
+    displayMessage('user', message);
 
-                if (message.trim() !== "") {
-                    fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ message: message })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        $('#chat-container').append(`<div>${data.message}</div>`);
-                        $('#message-input').val(''); 
-                    })
-                    .catch(error => console.error('Error:', error));
-                }
-            });
-        });
-    </script>
-    <script src="static/main.js"></script>
-</body>
-</html>
+    // Get the selected function from the dropdown menu
+    let functionSelect = document.getElementById('function-select');
+    let selectedFunction = functionSelect.value;
+
+    // Send an AJAX request to the Flask API endpoint based on the selected function
+    let xhr = new XMLHttpRequest();
+    let url;
+
+    switch (selectedFunction) {
+        case 'kb':
+            url = '/kbanswer';
+            break;
+        case 'answer':
+            url = '/answer';
+            break;
+        default:
+            url = '/answer';
+    }
+
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            let response = JSON.parse(xhr.responseText);
+            displayMessage('assistant', response.message);
+        } else {
+            displayMessage('assistant', 'Error: Unable to process your request.');
+        }
+    };
+    xhr.send(JSON.stringify({message: message}));
+
+    // Clear the input field
+    messageInput.value = '';
+}
+
+function displayMessage(sender, message) {
+    let chatContainer = document.getElementById('chat-container');
+    let messageDiv = document.createElement('div');
+
+    if (sender === 'assistant') {
+        messageDiv.classList.add('assistant-message');
+        messageDiv.innerHTML = "<b>ChatWise:</b> " + message;
+    } else {
+        messageDiv.classList.add('user-message');
+        messageDiv.innerHTML = "<b>User:</b> " + message;
+    }
+
+    // Create a timestamp element
+    let timestamp = document.createElement('span');
+    timestamp.classList.add('timestamp');
+    let currentTime = new Date().toLocaleTimeString();
+    timestamp.innerText = " [" + currentTime + "]";
+    messageDiv.appendChild(timestamp);
+
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll
+
+    // Implement loading indicators
+    setTimeout(() => {
+        displayMessage('assistant', '...');
+    }, 1000);
+}
+
+// Clear chat history
+document.getElementById('clear-btn').addEventListener('click', function() {
+    document.getElementById('chat-container').innerHTML = '';
+});
+document.getElementById('send-btn').addEventListener('click', sendMessage);
