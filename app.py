@@ -24,16 +24,31 @@ def search_knowledgebase(message):
 
 def answer_as_chatbot(message):
     memory = ConversationBufferMemory()
-    template = """You are an expert Python developer. 
+
+    # Create the prompt template
+    template = """You are an expert Python developer.
     Answer the following question in a clear and informative manner:
     Question: {question}
     Answer:"""
     prompt = PromptTemplate(template=template, input_variables=["question"])
-    memory.add_user_message(message)
+
+   # Add user message to memory
+    memory.chat_memory.add_message(HumanMessage(content=message))
+
+   # Initialize LLM and Chain
     llm = Cohere(cohere_api_key=os.environ["COHERE_API_KEY"])
     llm_chain = LLMChain(prompt=prompt, llm=llm)
-    res = llm_chain.run(message)
-    memory.add_ai_message(res)
+
+   # Get the response from the LLM
+    try:
+        res = llm_chain.run(message)
+        print(f"Generated response: {res}")  # Debugging output
+    except Exception as e:
+        print(f"Error generating response: {e}")
+        return "Error generating response"
+
+    # Add AI message to memory
+    memory.chat_memory.add_message(AIMessage(content=res))
     return res
 
 def load_db():
