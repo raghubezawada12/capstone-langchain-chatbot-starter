@@ -58,12 +58,8 @@ function displayMessage(sender, message) {
     messageDiv.appendChild(timestamp);
 
     chatContainer.appendChild(messageDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll
-
-    // Implement loading indicators
-    setTimeout(() => {
-        displayMessage('assistant', '...');
-    }, 1000);
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll 
+    return messageDiv;
 }
 
 // Clear chat history
